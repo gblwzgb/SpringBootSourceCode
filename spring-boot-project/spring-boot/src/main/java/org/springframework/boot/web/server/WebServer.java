@@ -17,6 +17,10 @@
 package org.springframework.boot.web.server;
 
 /**
+ * 表示完全配置的Web服务器的简单接口（例如Tomcat，Jetty，Netty）。允许启动和停止服务器。
+ */
+
+/**
  * Simple interface that represents a fully configured web server (for example Tomcat,
  * Jetty, Netty). Allows the server to be {@link #start() started} and {@link #stop()
  * stopped}.
