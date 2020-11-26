@@ -31,6 +31,9 @@ import org.springframework.core.type.AnnotationMetadata;
  *
  * @author Phillip Webb
  */
+// 使用 @Component 可以将 @ConfigurationProperties 的 bean 加载，通过注入这个 bean，就可以取到属性。
+// 有些第三方的包，使用了 @ConfigurationProperties 注解，但是没有 @Component 注解，这个时候使用者就需要使用 @EnableConfigurationProperties，
+// 来把 @ConfigurationProperties 的类转成 BeanDefinition 注册到 BeanFactory 中。
 class EnableConfigurationPropertiesRegistrar implements ImportBeanDefinitionRegistrar {
 
 	@Override
@@ -41,6 +44,8 @@ class EnableConfigurationPropertiesRegistrar implements ImportBeanDefinitionRegi
 	}
 
 	private Set<Class<?>> getTypes(AnnotationMetadata metadata) {
+		// demo：@EnableConfigurationProperties({UserProperties.class, XxxProperties.class})
+		// 将一个类上的所有 @EnableConfigurationProperties 注解里的 value 值，解析到 Set 里。
 		return metadata.getAnnotations().stream(EnableConfigurationProperties.class)
 				.flatMap((annotation) -> Arrays.stream(annotation.getClassArray(MergedAnnotation.VALUE)))
 				.filter((type) -> void.class != type).collect(Collectors.toSet());

@@ -48,6 +48,7 @@ final class ConfigurationPropertiesBeanRegistrar {
 	}
 
 	void register(Class<?> type) {
+		// 从类上解析 @ConfigurationProperties("xxx") 注解
 		MergedAnnotation<ConfigurationProperties> annotation = MergedAnnotations
 				.from(type, SearchStrategy.TYPE_HIERARCHY).get(ConfigurationProperties.class);
 		register(type, annotation);
@@ -55,7 +56,7 @@ final class ConfigurationPropertiesBeanRegistrar {
 
 	void register(Class<?> type, MergedAnnotation<ConfigurationProperties> annotation) {
 		String name = getName(type, annotation);
-		if (!containsBeanDefinition(name)) {
+		if (!containsBeanDefinition(name)) {  // BD不存在，就注册一下
 			registerBeanDefinition(name, type, annotation);
 		}
 	}
@@ -84,6 +85,7 @@ final class ConfigurationPropertiesBeanRegistrar {
 			MergedAnnotation<ConfigurationProperties> annotation) {
 		Assert.state(annotation.isPresent(), () -> "No " + ConfigurationProperties.class.getSimpleName()
 				+ " annotation found on  '" + type.getName() + "'.");
+		// 创建一个 bean，并注册到 BeanFactory 中。
 		this.registry.registerBeanDefinition(beanName, createBeanDefinition(beanName, type));
 	}
 
