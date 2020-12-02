@@ -98,6 +98,7 @@ import org.springframework.util.StringUtils;
  * @see #setContextLifecycleListeners(Collection)
  * @see TomcatWebServer
  */
+// 屏蔽复杂的创建过程，为使用者提供可用的 Tomcat 实例
 public class TomcatServletWebServerFactory extends AbstractServletWebServerFactory
 		implements ConfigurableTomcatWebServerFactory, ResourceLoaderAware {
 
@@ -179,15 +180,27 @@ public class TomcatServletWebServerFactory extends AbstractServletWebServerFacto
 		tomcat.setBaseDir(baseDir.getAbsolutePath());
 		Connector connector = new Connector(this.protocol);
 		connector.setThrowOnFailure(true);
+		// getService 时会创建 StandardServer、StandardService
+		// 添加连接器到 StandardService 中
 		tomcat.getService().addConnector(connector);
+		// 自定义连接器
 		customizeConnector(connector);
+		// 设置连接器
 		tomcat.setConnector(connector);
+		// getHost 的时候，发现 Engine 不存在，会创建一个 StandardEngine
+		// 发现 Host 不存在，会创建一个 StandardHost
 		tomcat.getHost().setAutoDeploy(false);
+		// 配置 StandardEngine，主要是给 Engine 添加 Valve
 		configureEngine(tomcat.getEngine());
 		for (Connector additionalConnector : this.additionalTomcatConnectors) {
 			tomcat.getService().addConnector(additionalConnector);
 		}
+		// 准备上下文，context 是 host 的子容器
+		// 1、创建上下文
+		// 2、配置上下文
+		// 3、将上下文加到 host 的子容器内
 		prepareContext(tomcat.getHost(), initializers);
+		// 这里的get会启动 Tomcat
 		return getTomcatWebServer(tomcat);
 	}
 
@@ -200,12 +213,14 @@ public class TomcatServletWebServerFactory extends AbstractServletWebServerFacto
 
 	protected void prepareContext(Host host, ServletContextInitializer[] initializers) {
 		File documentRoot = getValidDocumentRoot();
+		// 这个是 StandardContext 的子类
 		TomcatEmbeddedContext context = new TomcatEmbeddedContext();
 		if (documentRoot != null) {
 			context.setResources(new LoaderHidingResourceRoot(context));
 		}
 		context.setName(getContextPath());
 		context.setDisplayName(getDisplayName());
+		// context 路径，这个项目中是通过 server.servlet.context-path 设置的。
 		context.setPath(getContextPath());
 		File docBase = (documentRoot != null) ? documentRoot : createTempDir("tomcat-docbase");
 		context.setDocBase(docBase.getAbsolutePath());
@@ -236,6 +251,7 @@ public class TomcatServletWebServerFactory extends AbstractServletWebServerFacto
 		context.addLifecycleListener(new StaticResourceConfigurer(context));
 		ServletContextInitializer[] initializersToUse = mergeInitializers(initializers);
 		host.addChild(context);
+		// 配置上下文
 		configureContext(context, initializersToUse);
 		postProcessContext(context);
 	}
@@ -299,6 +315,7 @@ public class TomcatServletWebServerFactory extends AbstractServletWebServerFacto
 
 	// Needs to be protected so it can be used by subclasses
 	protected void customizeConnector(Connector connector) {
+		// 设置监听的端口，这个配置本质上是通过 @ConfigurationProperties 获取到的。
 		int port = Math.max(getPort(), 0);
 		connector.setPort(port);
 		if (StringUtils.hasText(this.getServerHeader())) {
@@ -309,6 +326,7 @@ public class TomcatServletWebServerFactory extends AbstractServletWebServerFacto
 		}
 		invokeProtocolHandlerCustomizers(connector.getProtocolHandler());
 		if (getUriEncoding() != null) {
+			// uri的编码，默认是utf-8了
 			connector.setURIEncoding(getUriEncoding().name());
 		}
 		// Don't bind to the socket prematurely if ApplicationContext is slow to start
@@ -354,6 +372,7 @@ public class TomcatServletWebServerFactory extends AbstractServletWebServerFacto
 			embeddedContext.setStarter(starter);
 			embeddedContext.setFailCtxIfServletStartFails(true);
 		}
+		/** 重要，加入 TomcatStarter，为后续 DispatcherServlet 上场做准备 */
 		context.addServletContainerInitializer(starter, NO_CLASSES);
 		for (LifecycleListener lifecycleListener : this.contextLifecycleListeners) {
 			context.addLifecycleListener(lifecycleListener);

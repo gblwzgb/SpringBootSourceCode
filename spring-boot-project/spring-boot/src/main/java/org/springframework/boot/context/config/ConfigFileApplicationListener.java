@@ -299,6 +299,7 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 
 		private final ResourceLoader resourceLoader;
 
+		// 从 spring.factories 中读取的，有两种实现，PropertiesPropertySourceLoader、YamlPropertySourceLoader
 		private final List<PropertySourceLoader> propertySourceLoaders;
 
 		private Deque<Profile> profiles;
@@ -436,6 +437,7 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
 			};
 		}
 
+		// 加载 classpath:/,classpath:/config/,file:./,file:./config/ 目录下的 properties、xml、yml、yaml 文件
 		private void load(Profile profile, DocumentFilterFactory filterFactory, DocumentConsumer consumer) {
 			getSearchLocations().forEach((location) -> {
 				boolean isFolder = location.endsWith("/");

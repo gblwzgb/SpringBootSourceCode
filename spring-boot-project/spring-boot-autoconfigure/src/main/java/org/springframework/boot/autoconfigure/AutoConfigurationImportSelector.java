@@ -114,8 +114,16 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 		}
 		// 获取 @EnableAutoConfiguration 的注解属性
 		AnnotationAttributes attributes = getAttributes(annotationMetadata);
+		// 从 spring.factories 中获取自动配置的类，key 为 org.springframework.boot.autoconfigure.EnableAutoConfiguration
+		// 要自动配置的话，一般这么搞
+		// org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+		//  org.springframework.boot.autoconfigure.admin.SpringApplicationAdminJmxAutoConfiguration,\
+		//  org.springframework.boot.autoconfigure.aop.AopAutoConfiguration,\
+		//  org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration,\
 		List<String> configurations = getCandidateConfigurations(annotationMetadata, attributes);
+		// 使用 set 去重
 		configurations = removeDuplicates(configurations);
+		// 过滤掉要排除的
 		Set<String> exclusions = getExclusions(annotationMetadata, attributes);
 		checkExcludedClasses(configurations, exclusions);
 		configurations.removeAll(exclusions);

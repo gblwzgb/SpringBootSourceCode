@@ -269,7 +269,9 @@ public class SpringApplication {
 		Assert.notNull(primarySources, "PrimarySources must not be null");
 		this.primarySources = new LinkedHashSet<>(Arrays.asList(primarySources));
 		this.webApplicationType = WebApplicationType.deduceFromClasspath();
+		// SPI：加载 ApplicationContextInitializer 的所有实现类
 		setInitializers((Collection) getSpringFactoriesInstances(ApplicationContextInitializer.class));
+		// SPI：加载 ApplicationListener 的所有实现类
 		setListeners((Collection) getSpringFactoriesInstances(ApplicationListener.class));
 		this.mainApplicationClass = deduceMainApplicationClass();
 	}
@@ -295,7 +297,11 @@ public class SpringApplication {
 	 * @param args the application arguments (usually passed from a Java main method)
 	 * @return a running {@link ApplicationContext}
 	 */
+	// 就两个核心职责
+	// 1、准备上下文。
+	// 2、使用该上下文来启动 Spring 框架。
 	public ConfigurableApplicationContext run(String... args) {
+		// 用于计时的类
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 		ConfigurableApplicationContext context = null;
@@ -308,16 +314,21 @@ public class SpringApplication {
 			ConfigurableEnvironment environment = prepareEnvironment(listeners, applicationArguments);
 			configureIgnoreBeanInfo(environment);
 			Banner printedBanner = printBanner(environment);
+			// 创建应用上下文，AnnotationConfigServletWebServerApplicationContext
 			context = createApplicationContext();
 			exceptionReporters = getSpringFactoriesInstances(SpringBootExceptionReporter.class,
 					new Class[] { ConfigurableApplicationContext.class }, context);
+			// 上下文准备工作
 			prepareContext(context, environment, listeners, applicationArguments, printedBanner);
+			/** 非常核心，Spring 框架的启动流程就在这一步，Tomcat 启动也发生在这里面*/
 			refreshContext(context);
+			// 空的，留给子类扩展
 			afterRefresh(context, applicationArguments);
 			stopWatch.stop();
 			if (this.logStartupInfo) {
 				new StartupInfoLogger(this.mainApplicationClass).logStarted(getApplicationLog(), stopWatch);
 			}
+			// 已启动事件
 			listeners.started(context);
 			callRunners(context, applicationArguments);
 		}
@@ -327,6 +338,7 @@ public class SpringApplication {
 		}
 
 		try {
+			// 运行中事件
 			listeners.running(context);
 		}
 		catch (Throwable ex) {
@@ -365,15 +377,21 @@ public class SpringApplication {
 
 	private void prepareContext(ConfigurableApplicationContext context, ConfigurableEnvironment environment,
 			SpringApplicationRunListeners listeners, ApplicationArguments applicationArguments, Banner printedBanner) {
+		// 设置 Env
 		context.setEnvironment(environment);
+		// 后置处理，可重写
 		postProcessApplicationContext(context);
+		// 扩展点，使用 ApplicationContextInitializer 自定义处理上下文，可通过 SPI 扩展
 		applyInitializers(context);
+		// contextPrepared 事件
+		/** 配置文件处理成 PropertySource 就发生在这一步 */
 		listeners.contextPrepared(context);
 		if (this.logStartupInfo) {
 			logStartupInfo(context.getParent() == null);
 			logStartupProfileInfo(context);
 		}
 		// Add boot specific singleton beans
+		// 添加一些 boot 的单例 bean
 		ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
 		beanFactory.registerSingleton("springApplicationArguments", applicationArguments);
 		if (printedBanner != null) {
@@ -389,7 +407,9 @@ public class SpringApplication {
 		// Load the sources
 		Set<Object> sources = getAllSources();
 		Assert.notEmpty(sources, "Sources must not be empty");
+		// 加载主类，注册成 BD
 		load(context, sources.toArray(new Object[0]));
+		// contextLoaded 事件
 		listeners.contextLoaded(context);
 	}
 
@@ -412,6 +432,7 @@ public class SpringApplication {
 
 	private SpringApplicationRunListeners getRunListeners(String[] args) {
 		Class<?>[] types = new Class<?>[] { SpringApplication.class, String[].class };
+		// 从 META-INF/spring.factories 中获取 SpringApplicationRunListener 的实现，这里是 EventPublishingRunListener
 		return new SpringApplicationRunListeners(logger,
 				getSpringFactoriesInstances(SpringApplicationRunListener.class, types, this, args));
 	}

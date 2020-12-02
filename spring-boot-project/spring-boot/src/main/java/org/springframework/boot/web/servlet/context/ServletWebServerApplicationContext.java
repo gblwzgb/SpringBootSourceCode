@@ -176,7 +176,9 @@ public class ServletWebServerApplicationContext extends GenericWebApplicationCon
 		WebServer webServer = this.webServer;
 		ServletContext servletContext = getServletContext();
 		if (webServer == null && servletContext == null) {
+			// 根据classpath下有哪些类，来决定是哪个工厂。
 			ServletWebServerFactory factory = getWebServerFactory();
+			// 通过工厂加工出 webServer，这里就看 TomcatServletWebServerFactory
 			this.webServer = factory.getWebServer(getSelfInitializer());
 		}
 		else if (servletContext != null) {
@@ -197,6 +199,7 @@ public class ServletWebServerApplicationContext extends GenericWebApplicationCon
 	 * @return a {@link ServletWebServerFactory} (never {@code null})
 	 */
 	protected ServletWebServerFactory getWebServerFactory() {
+		// 在 ServletWebServerFactoryConfiguration 中通过 @Conditional 注解来决定，到底加载哪个工厂
 		// Use bean names so that we don't consider the hierarchy
 		String[] beanNames = getBeanFactory().getBeanNamesForType(ServletWebServerFactory.class);
 		if (beanNames.length == 0) {
